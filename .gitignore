@@ -23,9 +23,13 @@ task-board/
 dsh-session-archive/
 dsh-usage/
 attachments/
+
+# GraphFlow indexes — contain conversation history (including pasted
+# credentials) and absolute paths. Never publish these. See memory/README.md.
 .graphflow/
 .graphflow-cache/
 graphflow-out/
+**/graphflow-out/
 
 # Build / dependency noise
 node_modules/

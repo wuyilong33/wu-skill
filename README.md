@@ -11,6 +11,7 @@ skills/          29 skills, ready to drop into ~/.dsh/skills/
 references/      7 shared reference docs (referenced by some skills)
 config/          AGENTS.md, cordis.patch.yml, pet/skin state, settings template
 plugins/         PLUGINS.md — the plugin list with upstream sources
+memory/          basic-memory notes + database for JC_resoruse_demo
 scripts/         restore.sh, install-plugins.sh
 wuai/            the /wuai workflow skill (also standalone)
 ```
@@ -90,6 +91,7 @@ These are **not** in this repository, on purpose:
 | `sessions/`, `storages/` | Conversation history and caches — machine-specific, and may contain private content. |
 | `profiles/*/node_modules` | Rebuilt by the install script. |
 | SSH private keys | Never leave the machine that owns them. |
+| **GraphFlow indexes** | They store **conversation history**, not just code — one held a pasted API key in plain text. Rebuild locally. See [memory/README.md](memory/README.md). |
 
 ## A note on the network
 
