@@ -1,0 +1,40 @@
+# Safety net: never commit credentials or machine-local state.
+# The restore script also refuses to copy these, but belt and braces.
+
+# Secrets
+.credentials.yaml
+*.credentials.yaml
+.env
+.env.*
+*.key
+id_rsa
+id_ed25519
+id_ed25519_*
+!id_ed25519_*.pub
+*_secret*
+*token*.txt
+
+# Machine-local DSH state
+settings.yaml
+sessions/
+storages/
+profiles/
+task-board/
+dsh-session-archive/
+dsh-usage/
+attachments/
+.graphflow/
+.graphflow-cache/
+graphflow-out/
+
+# Build / dependency noise
+node_modules/
+*.log
+*.bak
+*.bak-*
+*.tmp
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini

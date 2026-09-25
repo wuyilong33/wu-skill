@@ -1,0 +1,65 @@
+# DSH settings template — copy to ~/.dsh/settings.yaml and adjust.
+#
+# The `apiKeyEnv` below names an ENVIRONMENT VARIABLE, not the key itself.
+# No credential is stored in this file; that is deliberate.
+
+ui-onboarding:
+  welcomeNoticeVersion: 2026-08-13.1
+
+# ---------------------------------------------------------------------------
+# Model provider.
+#
+# This machine routes through a LOCAL proxy on 127.0.0.1:8787, which is NOT
+# portable — on another machine you must either run that proxy or point
+# baseURL at a provider you can reach directly.
+#
+# For a direct OpenAI-compatible endpoint, replace `baseURL` and keep
+# `apiKeyEnv` pointing at an environment variable that holds the key:
+#
+#   providers:
+#     myprov:
+#       apiKeyEnv: MY_API_KEY          # set this env var, never inline the key
+#       api: openai-completions
+#       baseURL: https://your-endpoint/v1
+#       compat:
+#         supportsDeveloperRole: false
+#         maxTokensField: max_tokens
+# ---------------------------------------------------------------------------
+llm-pi-ai:
+  providers:
+    workbuddy:
+      apiKeyEnv: WB_PROXY_KEY
+      api: openai-completions
+      baseURL: http://127.0.0.1:8787/v1
+      requestImagePixelBudget: 16777216
+      requestImageMaxBytes: 8388608
+      maxRequestImageBytes: 67108864
+      compat:
+        supportsDeveloperRole: false
+        maxTokensField: max_tokens
+      models:
+        - id: deepseek-v4-flash
+          name: DeepSeek V4.1 Flash
+          # 1M-token combined request+response context.
+          contextWindow: 1000000
+          maxTokens: 32768
+          # Declaring `image` is what makes this gateway model accept pictures.
+          # Without it the harness projects every image into a text placeholder
+          # and the model never sees the pixels.
+          input:
+            - text
+            - image
+
+agent-default-model:
+  provider: workbuddy
+  model: deepseek-v4-flash
+
+ui-theme:
+  fontSize: 16
+
+pet:
+  visible: true
+  size: 160
+  right: 24
+  bottom: 300
+  petId: whale-girl

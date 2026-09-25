@@ -1,0 +1,18 @@
+# GRAPHFLOW-DSH-BEGIN
+- insert:
+    - id: mcp-graphflow
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: graphflow
+        transport: stdio
+        command: npx
+        args:
+          - '-y'
+          - '--package=@roarpeng/graphflow'
+          - graphflow-mcp
+        env:
+          GRAPHFLOW_MCP_STDIO: '1'
+          GRAPHFLOW_LOG_JSON: '1'
+        cwd: !!js process.cwd()
+        failOnStartupError: false
+# GRAPHFLOW-DSH-END

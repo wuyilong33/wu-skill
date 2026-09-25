@@ -1,122 +1,132 @@
-# wuai — a multi-agent delivery workflow for DeepSeek Harness
+# DSH config bundle
 
-A single slash-command skill that runs the heavy pipeline: reconnaissance →
-consumer analysis → architect → parallel execution → convergence check →
-independent audit.
+A portable copy of a working **DeepSeek Harness** setup: skills, agent
+instructions, plugin list, and the `/wuai` workflow. Built so a second machine
+can be brought to the same configuration without rediscovering any of it.
 
-Type `/wuai <what you want built or analyzed>` and the agent runs the whole
-thing instead of improvising.
-
-> **Status: early.** The workflow is written and installs cleanly, but it has
-> been exercised only lightly on real tasks. Treat it as a strong skeleton,
-> not a proven process — and read [Honest limitations](#honest-limitations)
-> before relying on it.
-
-## What it is
-
-Most agent work fails in one of three places: it builds the wrong thing, it
-breaks a caller nobody checked, or it declares success without evidence.
-`wuai` is a written procedure aimed at those three failures specifically.
-
-| Phase | What happens | Which failure it targets |
-| --- | --- | --- |
-| **0** Reconnaissance | Resolve the project root, build/refresh the knowledge graph, read the project's own rules, write an explicit boundary statement | Building something out of scope |
-| **0.5** Consumer analysis | Name what is consumed, who reads it (`path:line`), what they assume, and which reader is actually broken | Fixing the wrong consumer |
-| **1** Architect | Spec first, then ordered tasks with concrete `path:line` anchors. Mandatory when the change touches a contract | Building the wrong thing well |
-| **2** Execute | Parallel writers, one per file, in a controlled environment | Conflicting concurrent edits |
-| **2.5** Convergence check | Is the same bug recurring? Did the file grow? What ends this work? | Patches accumulating instead of integrating |
-| **3** Audit | Independent read-only investigators, synthesised into ranked hypotheses | Blind spots shared with the author |
-| **Report** | Boundary → built → verified → findings → unproven | Claims without evidence |
-
-## Install
-
-The skill lives in the global DSH skills directory:
+## What is in here
 
 ```
-~/.dsh/skills/wuai/SKILL.md
+skills/          29 skills, ready to drop into ~/.dsh/skills/
+references/      7 shared reference docs (referenced by some skills)
+config/          AGENTS.md, cordis.patch.yml, pet/skin state, settings template
+plugins/         PLUGINS.md — the plugin list with upstream sources
+scripts/         restore.sh, install-plugins.sh
+wuai/            the /wuai workflow skill (also standalone)
 ```
 
-Copy the `wuai/` directory there:
+## Quick restore on a new machine
+
+**1. Install DeepSeek Harness and start it once**, so `~/.dsh` and its profiles
+are created. Then close it.
+
+**2. Clone this repository.**
 
 ```bash
-mkdir -p ~/.dsh/skills
-cp -r wuai ~/.dsh/skills/
+git clone git@github.com:wuyilong33/wu-skill.git dsh-config
+cd dsh-config
 ```
 
-Then add the trigger rule to `~/.dsh/AGENTS.md` so the command is recognised:
+**3. Preview what will be copied** (changes nothing):
 
-```markdown
-## `/wuai` — the full delivery workflow
-
-When the user's message begins with `/wuai`, load the `wuai` skill immediately
-and follow it end to end. Everything after the command is the task.
+```bash
+bash scripts/restore.sh
 ```
 
-Restart DeepSeek Harness so the skill is discovered.
+**4. Apply it:**
 
-## Usage
-
-```
-/wuai analyze the tunnel reconnect logic in this repo
-/wuai add rate limiting to the upload endpoint
-/wuai find why the nightly job silently skips records
+```bash
+bash scripts/restore.sh --apply
 ```
 
-Everything after `/wuai` is the task description.
+This copies the skills, the shared references, and `AGENTS.md` into `~/.dsh`.
+It **skips `settings.yaml` if one already exists** and never touches
+credentials.
 
-## Requirements
+**5. Install the plugins:**
 
-- **DeepSeek Harness** with skills enabled.
-- Optional but recommended: a **knowledge graph** for cheaper code reads. The
-  workflow checks for one in Phase 0 and works without it, just slower.
+```bash
+bash scripts/install-plugins.sh ~/.dsh/profiles/desktop
+```
 
-The skill references these companion skills when installed. Missing ones are
-skipped rather than fatal:
+Then follow the printed instructions to (a) approve the native build scripts
+and (b) add the bundle entries to the profile's `package.json`.
 
-`spec-driven-development`, `planning-and-task-breakdown`,
-`bug-hunt-swarm`, `code-review-and-quality`, `diagnose`, `tdd`,
-`grill-me`, `incremental-implementation`
+**6. Reconfigure the model provider.**
 
-## Honest limitations
+`settings.yaml` is **not** portable — it points at a local proxy on
+`127.0.0.1:8787` that only exists on the original machine. Use
+`config/settings.template.yaml` as a starting point and set your own endpoint
+and key. Keys live in environment variables, never in the file.
 
-These are known and not yet fixed. They are listed here rather than buried.
+**7. Restart DeepSeek Harness.**
 
-**It has not been battle-tested.** The structure is sound and the constraints
-are fact-checked, but the pipeline has run on very few real tasks. Phase 1
-subagents may return vague plans instead of the anchor analysis they were
-asked for; the parallel phases may hit the concurrency cap faster than the
-batching handles.
+## The `/wuai` workflow
 
-**"No bugs" is not promised.** No process can guarantee that. What this
-workflow commits to is narrower and honest: every claim carries pasted
-evidence, and unverified things are reported as unverified.
+A single command that runs a multi-agent pipeline instead of improvising:
 
-**Cost is real.** A single `/wuai` run can use an order of magnitude more
-tokens than ordinary conversation — an architect, parallel implementation
-agents, and an independent audit. The workflow treats this as intended, but it
-is your budget.
+```
+/wuai <what you want built or analyzed>
+```
 
-**Concurrency is capped by the host.** DeepSeek Harness allows at most **8**
-live continuable subagents and a delegation depth of **1** — a subagent cannot
-spawn its own subagents. Every delegated agent is therefore briefed completely
-up front; there is no recursive decomposition.
+Six phases: reconnaissance → **consumer analysis** → architect (spec +
+`path:line` anchors) → parallel execution with per-unit verification →
+**convergence check** → independent read-only audit.
 
-**No failure-return path yet.** If the audit finds a serious defect, the
-workflow as written does not loop back to re-implement and re-audit. That is a
-known gap.
+The consumer-analysis phase exists because a bug is rarely where it appears:
+naming what is consumed, who reads it, and which reader is actually broken
+prevents fixing the wrong place. The convergence check exists because a fix
+that works while making the codebase worse is not finished.
 
-## Design notes
+See [wuai/SKILL.md](wuai/SKILL.md).
 
-The phases exist because they fail differently:
+## Deliberately excluded
 
-- **Architect first** — the most expensive bug in software is building the
-  wrong thing well. A spec and anchor analysis catch it before code exists.
-- **Verify each unit** — a bug caught one step after it is introduced costs
-  minutes; the same bug caught at the end costs the whole task.
-- **Independent audit** — an agent reviewing its own work shares its own blind
-  spots, so the audit is only worth running if it is genuinely independent and
-  genuinely read-only.
+These are **not** in this repository, on purpose:
+
+| Excluded | Why |
+| --- | --- |
+| `.credentials.yaml` | Holds secrets. Recreate via the GUI Models page. |
+| `sessions/`, `storages/` | Conversation history and caches — machine-specific, and may contain private content. |
+| `profiles/*/node_modules` | Rebuilt by the install script. |
+| SSH private keys | Never leave the machine that owns them. |
+
+## A note on the network
+
+On the source machine, `github.com`'s IP was blocked, which broke HTTPS git
+and `gh auth login`. The working configuration routes SSH over port 443:
+
+```
+# ~/.ssh/config
+Host github.com
+  HostName ssh.github.com
+  Port 443
+  User git
+  IdentityFile ~/.ssh/id_ed25519_wuai
+  IdentitiesOnly yes
+```
+
+If `git push` fails on the new machine with a connection timeout rather than an
+auth error, this is the fix — and the same IP may not be blocked there at all,
+in which case it is unnecessary.
+
+## Skills inventory
+
+**Matt Pocock's engineering skills** (MIT) — 22 of them, including `diagnose`,
+`tdd`, `triage`, `to-prd`, `to-issues`, `grill-me`, `zoom-out`,
+`ubiquitous-language`, `improve-codebase-architecture`, `write-a-skill`,
+`caveman`.
+
+**Addy Osmani's skills** (MIT) — `spec-driven-development`,
+`planning-and-task-breakdown`, `code-review-and-quality`,
+`incremental-implementation`, `context-engineering`.
+
+**From TerminalSkills** (Apache-2.0) — `bug-hunt-swarm`.
+
+**`wuai`** — the workflow in this repository.
+
+Each skill keeps its own licence; see the individual `SKILL.md` files.
 
 ## License
 
-MIT
+MIT for the content authored here; third-party skills retain their own licences.
